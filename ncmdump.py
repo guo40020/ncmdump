@@ -99,23 +99,24 @@ def Dump():
             elif image_data.startswith(b'\x89PNG\r\n\x1a\n'):
                 mime = 'image/png'
             if meta_data['format'] == 'mp3':
-                audio = MP3(output_path)
-                audio.tags.add(
+                mp3 = MP3(output_path)
+                mp3.tags.add(
                     APIC(
                         mime=mime,
                         type=3,
                         data=image_data
                     )
                 )
-
+                mp3.save(v2_version=3)
             elif meta_data['format'] == 'flac':
-                audio = FLAC(output_path)
-                audio.clear_pictures()
-                cover = Picture(image_data)
+                flac = FLAC(output_path)
+                cover = Picture()
+                cover.data=image_data
+                cover.type = 3
                 cover.mime = mime
                 cover.desc = u'cover'
-                audio.add_picture(cover)
-            audio.save(v2_version=3)
+                flac.add_picture(cover)
+                flac.save()
         print('完成')
 
     return _dump
