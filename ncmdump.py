@@ -1,12 +1,14 @@
-#! /user/bin/env python3
+#! /usr/bin/env python3
 # -*-coding: utf-8 -*-
 from base64 import b64decode
 from functools import partial
 from json import loads
+import os
 from os import scandir
-from os.path import basename, join, isfile
+from os.path import basename, join, isfile, isdir
 from struct import unpack
 from time import clock
+import sys
 
 from Crypto.Cipher import AES
 from mutagen.flac import Picture, FLAC
@@ -62,7 +64,8 @@ def Dump():
             for i in range_256:
                 j = (key_box[i] + j + key_data[i % key_length]) & 0xff
                 key_box[i], key_box[j] = key_box[j], key_box[i]
-            modify_keys = bytes(key_box[(key_box[i] + key_box[(key_box[i] + i) & 0xff]) & 0xff] for i in indexes)
+            modify_keys = bytes(
+                key_box[(key_box[i] + key_box[(key_box[i] + i) & 0xff]) & 0xff] for i in indexes)
 
             # meta data
             meta_length = f.read(4)
@@ -111,7 +114,7 @@ def Dump():
             elif meta_data['format'] == 'flac':
                 flac = FLAC(output_path)
                 cover = Picture()
-                cover.data=image_data
+                cover.data = image_data
                 cover.type = 3
                 cover.mime = mime
                 cover.desc = u'cover'
@@ -131,10 +134,11 @@ def walk(path):
             yield entry
         else:
             yield from walk(entry.path)
-            
-   
-def search_and_dump(dir, output_dir):           
-    ncm_files = [entry.path for entry in walk(dir) if entry.name.endswith('.ncm')]
+
+
+def search_and_dump(dir, output_dir):
+    ncm_files = [entry.path for entry in walk(
+        dir) if entry.name.endswith('.ncm')]
     l = len(ncm_files)
     i = 1
     st = clock()
@@ -143,3 +147,29 @@ def search_and_dump(dir, output_dir):
         i += 1
         dump(file_path, output_dir)
     print(f'时间: {clock() - st:.2f}s')
+
+
+if __name__ == '__main__':
+    output = ''
+    if sys.argv.__len__() == 3:
+        # defined output
+        if not isdir(sys.argv[2]):
+            print('Output dir not found')
+            exit()
+        else:
+            output = sys.argv[2]
+    elif sys.argv.__len__() == 1:
+        print('Nothing provided')
+        exit
+    else:
+        output = os.path.abspath('')
+
+    if not isfile(sys.argv[1]) and not isdir(sys.argv[1]):
+        print('Not a diretory or a file')
+    elif isfile(sys.argv[1]):
+        dump(sys.argv[1], output)
+    else:
+        output = join(output, 'dirDump')
+        if not isdir(output):
+            os.mkdir(output)
+        search_and_dump(sys.argv[1], output)
